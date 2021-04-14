@@ -61,6 +61,28 @@ all(rand_res_func == rand_res_rfunc, sym_res_func == sym_res_rfunc)
 
 # Matrix to a power -------------------------------------------------------
 
+# recursive square and multiply algorithm for matrices
+rec_mat_power <- function(A, k) {
+  
+  if (k == 1) {
+    return(A)
+    
+  } else {
+    A_sq <- rec_mat_power(A, floor(k/2))
+    
+    if (k %% 2 == 0) {
+      return(A_sq %*% A_sq)
+      
+    } else {
+      return(A_sq %*% A_sq * A)
+      
+    }
+    
+  }
+  
+}
+
+# wrapper function to check prerequisites
 matrix_power <- function(A, k) {
   
   # if x is not already a matrix, check if it is coercible to one
@@ -74,38 +96,16 @@ matrix_power <- function(A, k) {
     
   }
   
-  # matrix to the power of 0 gives its identity matrix
   if (k == 0) {
-    
-    return(diag(dim(A)[1]))
-    
-  }
-  
-  for (i in 0:floor(k / 2)) {
-    
-    if (i < 1) {
-      
-      M_sq <- A
-      
-    } else {
-      
-      M <- M_sq
-      
-      M_sq <- M %*% M
-      
-    }
+    return(diag(nrow = nrow(A), ncol = ncol(A)))
     
   }
   
-  if (k > 1 && k - i * 2 != 0) {
-    
-    print("here")
-    
-    M_sq <- M_sq %*% A
-    
-  }
+  A <- rec_mat_power(A, k)
   
-  return(M_sq)
+  print(A)
+  
+  return(A)
   
 }
 
