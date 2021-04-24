@@ -23,8 +23,8 @@ getDegreesUndirected <- function(graph) {
 
 # Task 2 ------------------------------------------------------------------
 
-getNeighborsAdjacencySimple <- function (node, adj_mat, named = FALSE) {
-  row <- adj_mat[node, ]
+getNeighborsAdjacencySimple <- function (v, adj_mat, named = FALSE) {
+  row <- adj_mat[v, ]
   
   if (named) {
     nb <- names(row[row != 0])
@@ -37,7 +37,7 @@ getNeighborsAdjacencySimple <- function (node, adj_mat, named = FALSE) {
   
 }
 
-getNeighborsUndirected <- function(graph, node) {
+getNeighborsUndirected <- function(graph, v) {
   if (!require("igraph", quietly = TRUE)) {
     stop("Package 'igraph' required but not installed.")
   }
@@ -48,7 +48,7 @@ getNeighborsUndirected <- function(graph, node) {
   
   adj_mat <- as.matrix(graph[])
   
-  nb <- getNeighborsAdjacencySimple(node, adj_mat)
+  nb <- getNeighborsAdjacencySimple(v, adj_mat, named = is_named(graph))
   
   return(nb)
   
@@ -57,7 +57,7 @@ getNeighborsUndirected <- function(graph, node) {
 
 # Task 3 ------------------------------------------------------------------
 
-getNthNeighborsUndirected <- function(graph, v, order, simplify = TRUE) {
+getNthNeighborsUndirected <- function(graph, v, order = 2, simplify = TRUE) {
   if (!require("igraph", quietly = TRUE)) {
     stop("Package 'igraph' required but not installed.")
   }
@@ -68,7 +68,7 @@ getNthNeighborsUndirected <- function(graph, v, order, simplify = TRUE) {
   
   adj_mat <- as.matrix(graph[])
   
-  nodes <- list()
+  vrtcs <- list()
   
   # initialize vector of already found neighbors with 0
   # empty vector causes problems at initial comparing
@@ -77,39 +77,78 @@ getNthNeighborsUndirected <- function(graph, v, order, simplify = TRUE) {
   for (i in 1:order) {
     if (i == 1) {
       # handle case of i == 1, use original node
-      prev_nodes <- v
+      prev_vrtcs <- v
       
     } else {
-      # every other case: the previous nodes are in the previous list entry
-      prev_nodes <- nodes[[i - 1]]
+      # every other case: the previous vrtcs are in the previous list entry
+      prev_vrtcs <- vrtcs[[i - 1]]
     }
     
     # get list of each of the previous neighbors neighbors
-    # puts a list at pos i in the nodes list
-    nodes[[i]] <- lapply(prev_nodes, getNeighborsAdjacencySimple, adj_mat)
+    # puts a list at pos i in the vrtcs list
+    vrtcs[[i]] <- lapply(prev_vrtcs, getNeighborsAdjacencySimple, adj_mat,
+                         named = is_named(graph))
     
-    # convert output to a vector and filter out duplicates and nodes 
+    # convert output to a vector and filter out duplicates and vrtcs 
     # previously visited
-    nodes[[i]] <- unique(unlist(nodes[[i]]))
-    nodes[[i]] <- nodes[[i]][!(nodes[[i]] %in% anc_nds)]
+    vrtcs[[i]] <- unique(unlist(vrtcs[[i]]))
+    vrtcs[[i]] <- vrtcs[[i]][!(vrtcs[[i]] %in% anc_nds)]
     
-    # update list of visited nodes
-    anc_nds <- unlist(nodes)
+    # update list of visited vrtcs
+    anc_nds <- unlist(vrtcs)
   }
   
   # if requested, turn output into a vector
   if (simplify) {
-    nodes <- unlist(nodes)
+    vrtcs <- unlist(vrtcs)
   }
   
-  return(nodes)
+  return(vrtcs)
   
 }
 
 
 # Task 4 ------------------------------------------------------------------
 
-
+getNodesHighestSimilarity <- function(graph) {
+  
+  if (!require("igraph", quietly = TRUE)) {
+    stop("Package 'igraph' required but not installed.")
+  }
+  
+  if (is_directed(graph)) {
+    stop("This function can only deal with undirected graphs.")
+  }
+  
+  adj_mat <- graph[]
+  
+  vrtcs <- as.vector(V(graph))
+  
+  pairs <- combn(vrtcs, 2, simplify = FALSE)
+  
+  nbs <- lapply(vrtcs, getNeighborsAdjacencySimple, adj_mat = adj_mat,
+                named = is_named(graph))
+  
+  smlrty <- sapply(pairs, function(pair, nbs) {
+    
+    nbs_1 <- nbs[[pair[1]]]
+    nbs_2 <- nbs[[pair[2]]]
+    
+    n_union <- length(union(nbs_1, nbs_2))
+    
+    n_shared <- sum(nbs_1 %in% nbs_2)
+    
+    smlrty <- n_shared / n_union
+    
+    return(smlrty)
+    
+  }, nbs = nbs)
+  
+  max_sim_idx <- which(smlrty == max(smlrty))
+  
+  return(pairs[[max_sim_idx]])
+  
+}
 
 
 # Tests -------------------------------------------------------------------
@@ -148,4 +187,17 @@ if (sys.nframe() == 0) {
     print("Task 3 works.")
   }
   
+  # task 4
+  
+  max_sim_gNHS <- getNodesHighestSimilarity(rnd_graph)
+  
+  sim_mat <- similarity(rnd_graph)
+  
+  max_sim <- max(sim_mat[upper.tri(sim_mat)])
+  
+  sim_pair <- which(sim_mat == max_sim, arr.ind = TRUE)[2, ]
+  
+  if (all(max_sim_gNHS %in% sim_pair)) {
+    print("Task 4 works.")
+  }
 }
