@@ -57,7 +57,8 @@ getNeighborsUndirected <- function(graph, v) {
 
 # Task 3 ------------------------------------------------------------------
 
-getNthNeighborsUndirected <- function(graph, v, order = 2, simplify = TRUE) {
+getNthNeighborsUndirected <- function(graph, v, order = 2, simplify = TRUE,
+                                      full = FALSE, closed = TRUE) {
   if (!require("igraph", quietly = TRUE)) {
     stop("Package 'igraph' required but not installed.")
   }
@@ -66,13 +67,21 @@ getNthNeighborsUndirected <- function(graph, v, order = 2, simplify = TRUE) {
     stop("This function can only deal with undirected graphs.")
   }
   
+  if (order < 1) {
+    stop("0 or negative orders not permitted.")
+  }
+  
   adj_mat <- as.matrix(graph[])
   
   vrtcs <- list()
   
-  # initialize vector of already found neighbors with 0
-  # empty vector causes problems at initial comparing
-  anc_nds <- c(0)
+  # if the closed neighborhood is requested, add target vertex to ancestral
+  # nodes, else add 0 so it is not NULL
+  if (closed) { 
+    anc_nds <- v
+  } else {
+    anc_nds <- c(0)
+  }
   
   for (i in 1:order) {
     if (i == 1) {
@@ -96,6 +105,18 @@ getNthNeighborsUndirected <- function(graph, v, order = 2, simplify = TRUE) {
     
     # update list of visited vrtcs
     anc_nds <- unlist(vrtcs)
+    
+    # if closed neighborhood is requested, also ensure target node is counted
+    # as an ancestral node
+    if (closed) {
+      anc_nds <- c(anc_nds, v)
+    }
+  }
+  
+  # if requested, only return neighbors of the specified order instead of 
+  # the entire neighborhood
+  if (!full) {
+    vrtcs <- vrtcs[[order]]
   }
   
   # if requested, turn output into a vector
@@ -180,8 +201,15 @@ if (sys.nframe() == 0) {
   
   # task 3
   
-  gNNU_neighbors <- getNthNeighborsUndirected(rnd_graph, rnd_vert, 2)
-  igraph_nth_neighbor <- unlist(ego(rnd_graph, nodes = rnd_vert, order = 2))
+  gNNU_neighbors <- getNthNeighborsUndirected(rnd_graph,
+                                              rnd_vert,
+                                              order = 2,
+                                              full = FALSE)
+  
+  order_2 <- unlist(ego(rnd_graph, nodes = rnd_vert, order = 2))
+  order_1 <- unlist(ego(rnd_graph, nodes = rnd_vert, order = 1))
+  
+  igraph_nth_neighbor <- order_2[!(order_2 %in% order_1)]
   
   if (all(gNNU_neighbors %in% igraph_nth_neighbor)) {
     print("Task 3 works.")
