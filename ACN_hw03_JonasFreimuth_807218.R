@@ -10,7 +10,6 @@ top <- function(x) {
   return(t)
 }
 
-
 # DFS function ------------------------------------------------------------
 
 depFS <- function(v, G, plot = TRUE) {
@@ -88,7 +87,39 @@ depFS <- function(v, G, plot = TRUE) {
 
 # BFS ---------------------------------------------------------------------
 
-
+bredFS <- function(v, G, plot)  {
+  # additional prerequisites
+  n_nodes <- length(V(G))
+  mark <- rep(0, n_nodes)
+  out <- rep(NA, n_nodes)
+  
+  # main function body
+  Q <- queue()
+  
+  mark[v] <- 1
+  
+  pushback(Q, v)
+  
+  i <- 1
+  
+  while (length(Q) != 0) {
+    u <- pop(Q)
+    
+    print(u)
+    out[i] <- u
+    i <- i + 1
+    
+    for (w in neighbors(G, u)) {
+      if (mark[w] != 1) {
+        mark[w] <- 1
+        pushback(Q, w)
+      }
+    }
+  }
+  
+  return(out)
+  
+}
 
 # Tests -------------------------------------------------------------------
 
@@ -110,6 +141,15 @@ if (sys.nframe() == 0) {
   
   if (all(preorder_depFS == preorder_dfs)) {
     print("DFS works")
+  }
+  
+  # breadth first search
+  
+  postorder_bredFS <- bredFS(rnd_vert, rnd_graph)
+  postorder_bfs <- bfs(rnd_graph, rnd_vert, order = TRUE)$order
+  
+  if (all(postorder_bredFS == postorder_bfs)) {
+    print("BFS works")
   }
   
 }
