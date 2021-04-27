@@ -178,7 +178,7 @@ getNodesHighestSimilarity <- function(graph) {
 if (sys.nframe() == 0) {
   library("igraph")
   
-  rnd_graph <- sample_gnp(runif(1, max = 100), runif(1))
+  rnd_graph <- sample_gnp(runif(1, min = 1, max = 100), runif(1))
   
   plot(rnd_graph)
   
@@ -190,7 +190,8 @@ if (sys.nframe() == 0) {
   
   # task 2
   
-  rnd_vert <- as.numeric(V(rnd_graph)[runif(1, max = length(V(rnd_graph)))])
+  rnd_vert <- as.numeric(V(rnd_graph)[runif(1, min = 1,
+                                            max = length(V(rnd_graph)))])
   
   gNU_neighbor <- getNeighborsUndirected(rnd_graph, rnd_vert)
   igraph_neighbor <- neighbors(rnd_graph, rnd_vert)
