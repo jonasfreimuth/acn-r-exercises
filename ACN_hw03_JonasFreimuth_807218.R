@@ -10,20 +10,25 @@ top <- function(x) {
   return(t)
 }
 
+plotSearchTree <- function(edge_vec, graph) {
+  # save inclusion in spanning tree as edge attribute
+  e_ids <- get.edge.ids(graph, edge_vec)
+  
+  E(graph)$color <- NA
+  E(graph)$color[e_ids] <- "gold"
+  E(graph)$color[is.na(E(graph)$color)] <- "darkgrey"
+  
+  plot(graph, label = V(graph)$preorder)
+}
+
 # DFS function ------------------------------------------------------------
 
-depFS <- function(v, G, plot = TRUE) {
+depFS <- function(v, G, order.out = FALSE, warn = TRUE) {
   # additional prerequisites
   n_nodes <- length(V(G))
   mark <- rep(0, n_nodes)
-  out <- rep(NA, n_nodes)
-  
-  # if edges are to be plotted, initialize vector for storage and counting
-  # var for indexing
-  if (plot) {
-    preo_edges <- rep(NA, (n_nodes - 1) * 2)
-    j <- 1
-  }
+  order <- rep(NA, n_nodes)
+  preo_edges <- rep(NA, (n_nodes - 1) * 2)
   
   # main body
   P <- stack()
@@ -33,6 +38,7 @@ depFS <- function(v, G, plot = TRUE) {
   push(P, v)
   
   i <- 1
+  j <- 1
   
   while (length(P) != 0) {
     while(any(neighbors(G, top(P)) %in% which(mark != 1))) {
@@ -40,46 +46,35 @@ depFS <- function(v, G, plot = TRUE) {
       
       mark[w] <- 1
       
-      if (plot) {
-        preo_edges[j] <- top(P)
-        preo_edges[j + 1] <- w
-        
-        j <- j + 2
-      }
+      preo_edges[j] <- top(P)
+      preo_edges[j + 1] <- w
+      j <- j + 2
       
       push(P, w)
-      
     }
-    
-    # print(top(P))
-    
-    out[i] <- pop(P)
-    
+    order[i] <- pop(P)
     i <- i + 1
   }
   
-  if (any(is.na(out))) {
-    warning(paste("Node(s)", paste(which(is.na(out)), collapse = ", "),
-                  "have/has not been visited, check if node", v,
-                  "is part of their/its", "component."))
+  if (any(is.na(order))) {
+    if (warn) {
+      warning(paste("Node(s)", paste(which(is.na(order)), collapse = ", "),
+                    "have/has not been visited, check if node", v,
+                    "is part of their/its", "component."))
+    }
     
     # if there are unvisited nodes, we also need to prune the vector of 
     # traversed edges
     preo_edges <- preo_edges[!is.na(preo_edges)]
   }
   
-  if (plot) {
-    # save preorder as vertex attributes
-    names(out) <- 1:length(out)
-    V(G)$preorder <- names(sort(out))
-    
-    # save inclusion in spanning tree as edge attribute
-    e_ids <- get.edge.ids(G, preo_edges)
-    E(G)$color <- NA
-    E(G)$color[e_ids] <- "gold"
-    E(G)$color[is.na(E(G)$color)] <- "darkgrey"
-    
-    plot(G, label = V(G)$preorder)
+  # if requested, return a list containing both the preorder and the edges
+  # of the search tree, otherwise return only the vector of the edges
+  if (order.out) {
+    out <- list(tree_edges = preo_edges,
+                order.out = order)
+  } else {
+    out <- preo_edges
   }
   
   return(out)
@@ -87,11 +82,12 @@ depFS <- function(v, G, plot = TRUE) {
 
 # BFS ---------------------------------------------------------------------
 
-bredFS <- function(v, G, plot)  {
+bredFS <- function(v, G, plot, order.out = FALSE, warn = TRUE)  {
   # additional prerequisites
   n_nodes <- length(V(G))
   mark <- rep(0, n_nodes)
-  out <- rep(NA, n_nodes)
+  order <- rep(NA, n_nodes)
+  posto_edges <- rep(NA, (n_nodes - 1) * 2)
   
   # main function body
   Q <- queue()
@@ -101,20 +97,45 @@ bredFS <- function(v, G, plot)  {
   pushback(Q, v)
   
   i <- 1
+  j <- 1
   
   while (length(Q) != 0) {
     u <- pop(Q)
     
-    print(u)
-    out[i] <- u
+    order[i] <- u
     i <- i + 1
     
     for (w in neighbors(G, u)) {
       if (mark[w] != 1) {
         mark[w] <- 1
         pushback(Q, w)
+        
+        posto_edges[j] <- u
+        posto_edges[j + 1] <- w
+        j <- j + 2
       }
     }
+  }
+  
+  if (any(is.na(order))) {
+    if (warn) {
+      warning(paste("Node(s)", paste(which(is.na(order)), collapse = ", "),
+                    "have/has not been visited, check if node", v,
+                    "is part of their/its", "component."))
+    }
+    
+    # if there are unvisited nodes, we also need to prune the vector of 
+    # traversed edges
+    posto_edges <- posto_edges[!is.na(posto_edges)]
+  }
+  
+  # if requested, return a list containing both the postorder and the edges
+  # of the search tree, otherwise return only the vector of the edges
+  if (order.out) {
+    out <- list(tree_edges = posto_edges,
+                order.out = order)
+  } else {
+    out <- posto_edges
   }
   
   return(out)
@@ -122,7 +143,6 @@ bredFS <- function(v, G, plot)  {
 }
 
 # Tests -------------------------------------------------------------------
-
 
 if (sys.nframe() == 0) {
   library("igraph")
@@ -136,20 +156,31 @@ if (sys.nframe() == 0) {
   
   # depth first search
   
-  preorder_depFS <- depFS(rnd_vert, rnd_graph)
+  depFS_edges <- depFS(rnd_vert, rnd_graph)
+  plotSearchTree(depFS_edges, rnd_graph)
+  
+  preorder_depFS <- depFS(rnd_vert, rnd_graph,
+                          order.out = TRUE, warn = FALSE)$order.out
   preorder_dfs <- dfs(rnd_graph, rnd_vert, order.out = TRUE)$order.out
   
   if (all(preorder_depFS == preorder_dfs)) {
     print("DFS works")
+  } else {
+    print("DFS failed")
   }
   
   # breadth first search
   
-  postorder_bredFS <- bredFS(rnd_vert, rnd_graph)
+  bredFS_edges <- bredFS(rnd_vert, rnd_graph)
+  plotSearchTree(bredFS_edges, rnd_graph)
+  
+  postorder_bredFS <- bredFS(rnd_vert, rnd_graph, order.out = TRUE)$order.out
   postorder_bfs <- bfs(rnd_graph, rnd_vert, order = TRUE)$order
   
   if (all(postorder_bredFS == postorder_bfs)) {
     print("BFS works")
+  } else {
+    print("BFS failed")
   }
   
 }
