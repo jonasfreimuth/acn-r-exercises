@@ -43,7 +43,7 @@ pwDistUnweightSimple <- function (G, v1, v2) {
     order[i] <- u
     i <- i + 1
     
-    for (w in neighbors(G, u)) {
+    for (w in neighbors(G, u, mode = "out")) {
       if (mark[w] != 1) {
         mark[w] <- 1
         pushback(Q, w)
