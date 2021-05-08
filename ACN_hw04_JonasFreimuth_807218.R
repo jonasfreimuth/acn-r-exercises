@@ -1,7 +1,7 @@
 
 # Helper functions --------------------------------------------------------
 
-check_valid <- function (G) {
+checkValid <- function (G) {
   if (!require("igraph", quietly = TRUE)) {
     stop("Package 'igraph' required but not installed.")
   }
@@ -19,6 +19,8 @@ check_valid <- function (G) {
 
 # Task 4 ------------------------------------------------------------------
 
+# Triangles:
+
 # for every node u
 #   for every neighbor v of u
 #     for every other neighbor w of u
@@ -28,12 +30,14 @@ check_valid <- function (G) {
 # return count
 
 nTriangles <- function (graph, tri.out = FALSE) {
-  check_valid(graph)
+  checkValid(graph)
+  
+  is_dir <- is.directed(graph)
   
   if (tri.out) { 
-    triangs <- matrix(nrow = 2 * length(V(graph)),
+    triangs <- matrix(nrow = length(V(graph))^3,
                       ncol = 3) 
-    }
+  }
   
   count <- 0
   
@@ -49,19 +53,25 @@ nTriangles <- function (graph, tri.out = FALSE) {
         # if an edge connects v to w
         if (graph[v, w]) {
           count <- count + 1
+          # print(c(u, v, w))
           if (tri.out) { triangs[count, ] <- c(u, v, w) }
         }
       }
       
       # delete the edge between u & v
       graph[u, v] <- FALSE
+      if (!is_dir) { graph[v, u] <- FALSE }
       out_nbs <- out_nbs[out_nbs != v]
+      if (!is_dir) { in_nbs <- in_nbs[in_nbs != v] }
     }
   }
   
   if (tri.out) {
     out <- list(n = count,
-                triangles = triangs[!apply(triangs, 1, function(x) any(is.na(x))),])
+                triangles = triangs[!apply(triangs,
+                                           1,
+                                           function(x) any(is.na(x)))
+                                    ,])
   } else {
     out <- count
   }
@@ -70,14 +80,62 @@ nTriangles <- function (graph, tri.out = FALSE) {
   
 }
 
+# 2-Paths
+
+# for every node u
+#   for every in-neighbor v of u
+#     for every out-neighbor w of u
+#       increase count
+
+nTwoPath <- function(graph) {
+  checkValid(graph)
+  
+  is_dir <- is.directed(graph)
+  
+  count <- 0
+  
+  # for every node u
+  for (u in V(graph)) {
+    out_nbs <- neighbors(graph, u, mode = "out")
+    in_nbs <- neighbors(graph, u, mode = "in")
+    
+    # for every in-neighbor v of u
+    #   for every out-neighbor w of u
+    #       increase count
+    # for (v in in_nbs) {
+    #   for (w in out_nbs[out_nbs != v]) {
+    #     count <- count + 1
+    #     
+    #   }
+    # }
+    
+    if (is_dir) {
+      count <- count + length(in_nbs) * length(out_nbs)
+    } else {
+      count <- count + length(in_nbs) * (length(in_nbs) - 1) / 2
+    }
+  }
+  
+  return (count)
+}
+
+transtvty <- function(graph) {
+  checkValid(graph)
+  
+  return(3 * nTriangles(graph) / nTwoPath(graph))
+  
+}
+
 
 # Tests -------------------------------------------------------------------
-
+  
 if (sys.nframe() == 0) {
   library("igraph")
   
-  rnd_graph <- sample_gnp(runif(1, min = 1, max = 10),
-                          runif(1), directed = TRUE)
+  rnd_graph <- sample_gnp(runif(1, min = 1, max = 20),
+                          runif(1),
+                          # directed = TRUE
+                          )
   
   plot(rnd_graph)
   
@@ -89,6 +147,12 @@ if (sys.nframe() == 0) {
   rnd_vert_2 <- as.numeric(V(rnd_graph)[runif(1, min = 1,
                                               max = length(V(rnd_graph)))])
   
-  print(nTriangles(rnd_graph, tri.out = T))
+  tris <- nTriangles(rnd_graph, tri.out = T)
+  print(paste("Triangles:", tris$n))
+  print(tris$triangles)
+  print(paste("2-Paths:", nTwoPath(rnd_graph)))
+  
+  transitivity(rnd_graph)
+  transtvty(rnd_graph)
   
 }
