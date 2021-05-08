@@ -119,23 +119,89 @@ nTwoPath <- function(graph) {
   return (count)
 }
 
-transtvty <- function(graph) {
+transtvty <- function (graph) {
   checkValid(graph)
   
-  return(3 * nTriangles(graph) / nTwoPath(graph))
+  return (3 * nTriangles(graph) / nTwoPath(graph))
   
 }
 
 
-# Tests -------------------------------------------------------------------
+# Task 2 ------------------------------------------------------------------
+
+
+# from last week:
+nShortestPaths <- function (G, v1, v2, dist.out = FALSE) {
+  checkValid(G)
   
+  if (v1 == v2) {
+    if (dist.out) {
+      out <- list(n = 0, dist = 0)
+    } else {
+      out <- list(n = 0)
+    }
+    return (out)
+  }
+  
+  # additional prerequisites
+  n_nodes <- length(V(G))
+  mark <- rep(0, n_nodes)
+  dist <- rep(Inf, n_nodes)
+  count <- 0
+  
+  # main function body
+  Q <- queue()
+  
+  mark[v1] <- 1
+  dist[v1] <- 0
+  
+  pushback(Q, v1)
+  
+  while (length(Q) != 0) {
+    u <- pop(Q)
+    
+    for (w in neighbors(G, u, mode = "out")) {
+      if (mark[w] != 1) {
+        # if we visit a node here its distance can't be inf
+        if (is.infinite(dist[w])) {
+          dist[w] <- 0
+        }
+        
+        mark[w] <- 1
+        pushback(Q, w)
+        dist[w] <- dist[u] + 1
+      }
+      
+      if (count > 0 && max(dist) > dist[v2]) {
+        break
+      }
+      
+      if (w == v2) {
+        count <- count + 1
+      }
+      
+    }
+  }
+  
+  if (dist.out) {
+    out <- list(n = count, dist = dist[v2])
+  } else {
+    out <- list(n = count)
+  }
+  
+  return (out)
+}
+
+
+# Tests -------------------------------------------------------------------
+
 if (sys.nframe() == 0) {
-  library("igraph")
+  library ("igraph")
   
   rnd_graph <- sample_gnp(runif(1, min = 1, max = 20),
                           runif(1),
                           directed = TRUE
-                          )
+  )
   
   plot(rnd_graph)
   
@@ -157,7 +223,16 @@ if (sys.nframe() == 0) {
   print(paste("Own:", transtvty(as.undirected(rnd_graph))))
   print(paste(
     "Equal:", transitivity(rnd_graph) == transtvty(as.undirected(rnd_graph)))
-    )
+  )
   
   print(paste("Own directed:", transtvty(rnd_graph)))
+  
+  nSP <- nShortestPaths(rnd_graph, rnd_vert_1, rnd_vert_2, dist.out = TRUE)
+  print(paste("Distance between",
+              rnd_vert_1, "and", rnd_vert_2,
+              "is:", nSP$dist))
+  
+  print(paste("There exist",
+              nSP$n, "paths of minimum length between them."))
+  
 }
