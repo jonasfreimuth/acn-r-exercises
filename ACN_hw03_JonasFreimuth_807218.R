@@ -6,6 +6,10 @@ check_valid <- function (G) {
     stop("Package 'igraph' required but not installed.")
   }
   
+  if (!require("dequer", quietly = TRUE)) {
+    stop("Package 'dequer' required but not installed.")
+  }
+  
   if (is_weighted(G) || !is_simple(G)) {
     stop(paste("BFS algorithm to find pairwise shortest paths does not work on",
                "weighted graphs or multigraphs."))
@@ -97,7 +101,7 @@ plotHighlight <- function (G, vtcs) {
 if (sys.nframe() == 0) {
   library("igraph")
   
-  rnd_graph <- sample_gnp(runif(1, min = 1, max = 100), runif(1))
+  rnd_graph <- sample_gnp(runif(1, min = 1, max = 100), runif(1), directed = TRUE)
   
   plot(rnd_graph)
   
@@ -121,7 +125,7 @@ if (sys.nframe() == 0) {
   # task 2
   
   ecc_gEUS <- getEccUnweightSimple(rnd_graph, rnd_vert)
-  ecc_ecc <- eccentricity(rnd_graph, rnd_vert)
+  ecc_ecc <- eccentricity(rnd_graph, rnd_vert, mode = "out")
   
   if (ecc_ecc == ecc_gEUS) {
     print("Task 2: Eccentricity determination works") 
