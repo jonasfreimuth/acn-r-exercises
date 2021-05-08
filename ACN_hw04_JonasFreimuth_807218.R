@@ -134,7 +134,7 @@ if (sys.nframe() == 0) {
   
   rnd_graph <- sample_gnp(runif(1, min = 1, max = 20),
                           runif(1),
-                          # directed = TRUE
+                          directed = TRUE
                           )
   
   plot(rnd_graph)
@@ -152,7 +152,12 @@ if (sys.nframe() == 0) {
   print(tris$triangles)
   print(paste("2-Paths:", nTwoPath(rnd_graph)))
   
-  transitivity(rnd_graph)
-  transtvty(rnd_graph)
+  print("Transitivities if undirected:")
+  print(paste("Igraph:", transitivity(rnd_graph)))
+  print(paste("Own:", transtvty(as.undirected(rnd_graph))))
+  print(paste(
+    "Equal:", transitivity(rnd_graph) == transtvty(as.undirected(rnd_graph)))
+    )
   
+  print(paste("Own directed:", transtvty(rnd_graph)))
 }
