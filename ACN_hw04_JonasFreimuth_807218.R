@@ -233,6 +233,6 @@ if (sys.nframe() == 0) {
               "is:", nSP$dist))
   
   print(paste("There exist",
-              nSP$n, "paths of minimum length between them."))
+              nSP$n, "paths of minimal length between them."))
   
 }
