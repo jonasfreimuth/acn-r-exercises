@@ -1,6 +1,9 @@
 
 # Helper functions --------------------------------------------------------
 
+# function to ensure all packages are available, and a given graph
+# does not 
+
 checkValid <- function (G) {
   if (!require("igraph", quietly = TRUE)) {
     stop("Package 'igraph' required but not installed.")
@@ -34,6 +37,7 @@ nTriangles <- function (graph, tri.out = FALSE) {
   
   is_dir <- is.directed(graph)
   
+  # if requested, initialize matrix for vertex ids each triangles
   if (tri.out) { 
     triangs <- matrix(nrow = length(V(graph))^3,
                       ncol = 3) 
@@ -43,6 +47,8 @@ nTriangles <- function (graph, tri.out = FALSE) {
   
   # for every node u
   for (u in V(graph)) {
+    # in case of directed graph, a triangle consists of the edges 
+    # u -> v -> w -> u, with v an out-neighbor of u and w an in-neighbor of u
     out_nbs <- neighbors(graph, u, mode = "out")
     in_nbs <- neighbors(graph, u, mode = "in")
     
@@ -59,6 +65,7 @@ nTriangles <- function (graph, tri.out = FALSE) {
       }
       
       # delete the edge between u & v
+      # both from graph and the neighborhoods
       graph[u, v] <- FALSE
       if (!is_dir) { graph[v, u] <- FALSE }
       out_nbs <- out_nbs[out_nbs != v]
@@ -66,6 +73,7 @@ nTriangles <- function (graph, tri.out = FALSE) {
     }
   }
   
+  # prepare output
   if (tri.out) {
     out <- list(n = count,
                 triangles = triangs[!apply(triangs,
@@ -99,16 +107,8 @@ nTwoPath <- function(graph) {
     out_nbs <- neighbors(graph, u, mode = "out")
     in_nbs <- neighbors(graph, u, mode = "in")
     
-    # for every in-neighbor v of u
-    #   for every out-neighbor w of u
-    #       increase count
-    # for (v in in_nbs) {
-    #   for (w in out_nbs[out_nbs != v]) {
-    #     count <- count + 1
-    #     
-    #   }
-    # }
-    
+    # these formulas should always amount to the number of cycles in the for 
+    # loops from the pseudocode
     if (is_dir) {
       count <- count + length(in_nbs) * length(out_nbs)
     } else {
@@ -118,6 +118,8 @@ nTwoPath <- function(graph) {
   
   return (count)
 }
+
+# transitivity function
 
 transtvty <- function (graph) {
   checkValid(graph)
@@ -134,6 +136,8 @@ transtvty <- function (graph) {
 nShortestPaths <- function (G, v1, v2, dist.out = FALSE) {
   checkValid(G)
   
+  # if both nodes are the same, distance is 0, no need for the rest of 
+  # the algorithm
   if (v1 == v2) {
     if (dist.out) {
       out <- list(n = 0, dist = 0)
@@ -158,9 +162,11 @@ nShortestPaths <- function (G, v1, v2, dist.out = FALSE) {
   pushback(Q, v1)
   
   while (length(Q) != 0) {
+    # get first node
     u <- pop(Q)
     
     for (w in neighbors(G, u, mode = "out")) {
+      # visit only unmarked nodes
       if (mark[w] != 1) {
         # if we visit a node here its distance can't be inf
         if (is.infinite(dist[w])) {
@@ -172,10 +178,15 @@ nShortestPaths <- function (G, v1, v2, dist.out = FALSE) {
         dist[w] <- dist[u] + 1
       }
       
+      # this may be executed more often than it needs to but
+      # i didnt know where else to put it
       if (count > 0 && max(dist) > dist[v2]) {
         break
       }
       
+      # if we found v2 again, increment count
+      # if we found the node already, it would be marked, thats why this
+      # is outside the check for marks
       if (w == v2) {
         count <- count + 1
       }
@@ -183,6 +194,7 @@ nShortestPaths <- function (G, v1, v2, dist.out = FALSE) {
     }
   }
   
+  # construct output, if no path between v1 and v2, dist is Inf
   if (dist.out) {
     out <- list(n = count, dist = dist[v2])
   } else {
