@@ -19,9 +19,6 @@ checkValid <- function (G) {
   }
 }
 
-
-# Task 1 ------------------------------------------------------------------
-
 # function to obtain pairwise distance matrix and optionally a matrix of
 #   nodes visited on that path using floyd's algorithm
 #   adapted from exercise 5 solution
@@ -51,6 +48,11 @@ floyd <- function (G) {
   
 }
 
+
+# Task 1 ------------------------------------------------------------------
+
+# Answer to question: See in Tests Section
+
 corrStressCentrEcc <- function (G) {
   checkValid(G)
   
@@ -59,15 +61,20 @@ corrStressCentrEcc <- function (G) {
   
   sp <- floyd(G)
   
-  sp$dist[is.infinite(as.matrix(sp$dist))] <- 0
+  if (any(is.infinite(as.matrix(sp$dist)))) {
+    warning(paste("Some nodes are disconnected, setting their distance to 0."))
+    # defining distance to disconnected nodes as 0
+    # (what else should I do?)
+    sp$dist[is.infinite(as.matrix(sp$dist))] <- 0
+  }
   
   for (v in V(G)) {
+    # TODO Check how to get it to work on directed paths
     stress_centr[v] <- sum(sp$paths == v) 
     eccent[v] <- max(sp$dist[v, ])
   }
   
   if (length(E(G)) > 1) {
-    # TODO Deal with inf values
     corr <- cor.test(eccent, stress_centr)
   } else {
     warning(paste("Not enough vertices in Graph",
@@ -99,7 +106,25 @@ corrRel <- function (coef, p.val) {
 
 # Task 2 ------------------------------------------------------------------
 
-
+closeCentrality <- function(G, u = NULL) {
+  
+  if (is.null(u)) {
+    verts <- V(G)
+  } else {
+    verts <- c(u)
+  }
+  
+  ccents <- rep(NA, length(verts))
+  
+  sp <- floyd(G)
+  
+  for (v in verts) {
+    dist_vec <- sp$dist[, v]
+    ccents[v] <- sum(1/dist_vec[-v])
+  }
+  
+  return (ccents)
+}
 
 
 # Tests -------------------------------------------------------------------
@@ -110,6 +135,10 @@ if (sys.nframe() == 0) {
   # Task 1 ----------------------------------------------------------------
   
   reps <- 3
+  
+  res.vec <- rep(NA, reps)
+  res <- data.frame(n = res.vec, m = res.vec, cor.bara = res.vec,
+                    cor.erdos = res.vec, ratio = res.vec) 
   
   for (i in 1:reps) {
     
@@ -123,13 +152,29 @@ if (sys.nframe() == 0) {
     corr_ba <- corrStressCentrEcc(barabasi_albert)
     corr_er <- corrStressCentrEcc(erdos_renyi)
     
+    if (any(is.na(c(corr_ba$pval, corr_ba$corr_coef)))) {
+      sub_ba <- "No computation of correlation possible"
+    } else {
+      sub_ba <- paste(corrRel(corr_ba$corr_coef, corr_ba$pval),
+                      paste("r =", round(corr_ba$corr_coef, 2)),
+                      paste("p =", cut(corr_ba$pval, c(0, 0.05, 1),
+                                       c("< 0.05", ">= 0.05"))),
+                      sep = ", ")
+    }
+    
     plot(barabasi_albert, main = "Barabási–Albert",
-         sub = paste(corrRel(corr_ba$corr_coef, corr_ba$pval),
-                     paste("r =", round(corr_ba$corr_coef, 2)),
-                     paste("p =", cut(corr_ba$pval, c(0, 0.05, 1),
-                                      c("< 0.05", ">= 0.05"))),
-                     sep = ", ")
+         sub = sub_ba
          )
+    
+    if (any(is.na(c(corr_er$pval, corr_er$corr_coef)))) {
+      sub_er <- "No computation of correlation possible"
+    } else {
+      sub_er <- paste(corrRel(corr_er$corr_coef, corr_er$pval),
+                      paste("r =", round(corr_er$corr_coef, 2)),
+                      paste("p =", cut(corr_er$pval, c(0, 0.05, 1),
+                                       c("< 0.05", ">= 0.05"))),
+                      sep = ", ")
+    }
     
     plot(erdos_renyi, main = "Erdős–Rényi",
          sub = paste(corrRel(corr_er$corr_coef, corr_er$pval),
@@ -137,9 +182,30 @@ if (sys.nframe() == 0) {
                      paste("p ", cut(corr_er$pval, c(0, 0.05, 1),
                                       c("< 0.05", ">= 0.05"))),
                      sep = ", ")
-         )
+    )
+    
+    res$n[i] <- n
+    res$m[i] <- length(E(barabasi_albert))
+    res$cor.bara[i] <- corr_ba$corr_coef
+    res$cor.erdos[i] <- corr_er$corr_coef
+    res$diff[i] <- abs(corr_ba$corr_coef - corr_er$corr_coef)
+    
   }
   
+  # Answer to question: There seems to be no clear relationship of the
+  #                     eccentricity of a node with the number of shortest
+  #                     paths passing through it, neither for Barabási–Albert
+  #                     graphs, nor for Erdős–Rényi graphs of similar size 
+  #                     with respect to the number of nodes and edges.
+  
   par(op)
+  
+
+  # Task 2 ----------------------------------------------------------------
+  
+  close_ba <- closeCentrality(barabasi_albert)
+  close_er <- closeCentrality(erdos_renyi)
+    
 }
+
 
