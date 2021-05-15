@@ -44,7 +44,6 @@ floyd <- function (G) {
   
 }
 
-
 # Task 1 ------------------------------------------------------------------
 
 # Answer to question: See at end of script
@@ -174,13 +173,63 @@ closeCentrality <- function(G, u = NULL, floyd.res = NULL, raw = TRUE) {
 }
 
 
+# Task 3 ------------------------------------------------------------------
+
+pageRank <- function (G, alpha = 0.85, k = 1000, precision = 10) {
+  if (!require ("igraph", quietly = TRUE)) {
+    stop ("Package 'igraph' required but not installed.")
+  }
+  
+  if (!is.simple(G)) {
+    stop (paste("This algorithm does not work on",
+                "multigraphs."))
+  }
+  
+  if (!is.directed(G)) {
+    warning (paste("Given graph is undirected,",
+                   "an edge will be treated as both an in- and an out-edge."))
+  }
+  
+  A <- G[]
+  n <- nrow(A)
+  pr_0 <- rep(1 / n, n)
+  
+  E <- matrix(1, nrow = nrow(A), ncol = ncol(A))
+  
+  D <- matrix(0, nrow = nrow(A), ncol = ncol(A))
+  diag(D) <- degree(G, mode = "out")
+  
+  if (det(D) == 0) {
+    stop(paste("Determinant of matrix of outdegrees is 0,",
+               "getting the page rank is not possible."))
+  }
+  
+  P <- solve(D) %*% A
+  P_alpha <- alpha * P + 1 / n * (1 - alpha) * E
+  
+  P_old <- P_alpha
+  P_new <- P_alpha %*% P_alpha
+  
+  i <- 2
+  
+  while (all(round(P_new, precision) != round(P_old, precision)) && i <= k) {
+    P_old <- P_new
+    P_new <- P_old %*% P_old
+    i <- i + 1
+  }
+  
+  return (P_new %*% pr_0)
+  
+}
+
+
 # Tests -------------------------------------------------------------------
 
 if (sys.nframe() == 0) {
   library ("igraph")
   
   reps <- 5
-  direct <- FALSE
+  direct <- TRUE
   
   res.vec <- rep(NA, reps)
   res <- data.frame(n = res.vec, m = res.vec, cor.bara = res.vec,
@@ -190,7 +239,7 @@ if (sys.nframe() == 0) {
   # for loop for tasks 1 and 2
   for (i in 1:reps) {
     
-    n <- runif(1, 1, 50)
+    n <- round(runif(1, 1, 50))
     
     op <- par(mfrow = c(2, 2))
     
@@ -213,7 +262,7 @@ if (sys.nframe() == 0) {
       sub_ba <- paste(corrRel(corr_ba$corr_coef, corr_ba$pval),
                       paste("r =", round(corr_ba$corr_coef, 2)),
                       paste("p", cut(corr_ba$pval, c(0, 0.05, 1),
-                                       c("< 0.05", ">= 0.05"))),
+                                     c("< 0.05", ">= 0.05"))),
                       sep = ", ")
     }
     
@@ -227,7 +276,7 @@ if (sys.nframe() == 0) {
       sub_er <- paste(corrRel(corr_er$corr_coef, corr_er$pval),
                       paste("r =", round(corr_er$corr_coef, 2)),
                       paste("p", cut(corr_er$pval, c(0, 0.05, 1),
-                                       c("< 0.05", ">= 0.05"))),
+                                     c("< 0.05", ">= 0.05"))),
                       sep = ", ")
     }
     
@@ -250,7 +299,7 @@ if (sys.nframe() == 0) {
     
     closeness_ba <- closeness(barabasi_albert, mode = "out")
     closeness_er <- closeness(erdos_renyi, mode = "out")
-  
+    
     if (!(all(is.nan(close_ba)) | all(is.nan(close_er)))) {
       res$same.dist <- cut(ks_res$p.value, breaks = c(0, 0.05, 1),
                            labels = c("yes", "no"))
@@ -263,11 +312,11 @@ if (sys.nframe() == 0) {
       
     } else {
       plot.new()
-      text(1, 0, paste("Graph has no edges,",
+      text(0.5, 0, paste("Graph has no edges,",
                        "no closeness centralitiy computation possible.",
                        sep = "\n"))
       plot.new()
-      text(1, 0, paste("Graph has no edges,",
+      text(0.5, 0, paste("Graph has no edges,",
                        "no closeness centralitiy computation possible.",
                        sep = "\n"))
     }
@@ -280,7 +329,6 @@ if (sys.nframe() == 0) {
   print(res)
   
   par(op)
-  
   
 }
 
@@ -300,6 +348,7 @@ if (sys.nframe() == 0) {
 # 
 # Answer task 2b: The results of my own function for closenessCentrality 
 #                 computation do not match the ones returned by the igraph
-#                 function, 
+#                 function. Why, thats left 
+# TODO
 
 
