@@ -9,12 +9,8 @@ checkValid <- function (G) {
     stop("Package 'igraph' required but not installed.")
   }
   
-  if (!require("dequer", quietly = TRUE)) {
-    stop("Package 'dequer' required but not installed.")
-  }
-  
   if (is_weighted(G) || !is_simple(G)) {
-    stop(paste("BFS algorithm to find pairwise shortest paths does not work on",
+    stop(paste("This algorithm does not work on",
                "weighted graphs or multigraphs."))
   }
 }
