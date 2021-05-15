@@ -51,15 +51,26 @@ floyd <- function (G) {
 
 # Task 1 ------------------------------------------------------------------
 
-# Answer to question: See in Tests Section
+# Answer to question: See at end of script
 
-corrStressCentrEcc <- function (G) {
+corrStressCentrEcc <- function (G, floyd.res = NULL) {
   checkValid(G)
   
   stress_centr <- rep(NA, length(V(G)))
   eccent <- stress_centr
   
-  sp <- floyd(G)
+  # optionally take the result of a call to floyd, so as to reduce running
+  # in case the algorithm has run on the same graph before
+  if (is.null(floyd.res)) {
+    sp <- floyd(G)
+  } else {
+    # do a rudimentary check whether the incoming result is a result of running 
+    # floyd on the input graph
+    if (!all(dim(floyd.res[]) == dim(G[]))) {
+      stop("floy.res is not a result of running floyd on the input graph.")
+    }
+    sp <- floyd.res
+  }
   
   if (any(is.infinite(as.matrix(sp$dist)))) {
     warning(paste("Some nodes are disconnected, setting their distance to 0."))
@@ -69,10 +80,13 @@ corrStressCentrEcc <- function (G) {
   }
   
   for (v in V(G)) {
-    # TODO Check how to get it to work on directed paths
-    stress_centr[v] <- sum(sp$paths == v) 
+    stress_centr[v] <- sum(sp$paths == v)
     eccent[v] <- max(sp$dist[v, ])
   }
+  
+  # in case G is not directed, stress centralities need to be halfed (as paths 
+  # would be counted double)
+  if (!is.directed(G)) {stress_centr <- stress_centr / 2}
   
   if (length(E(G)) > 1) {
     corr <- cor.test(eccent, stress_centr)
@@ -106,7 +120,13 @@ corrRel <- function (coef, p.val) {
 
 # Task 2 ------------------------------------------------------------------
 
-closeCentrality <- function(G, u = NULL) {
+# As Graphs which are not strongly disconnected are not excluded, I will be
+# using the closeness centrality for networks not strongly connected, defined
+# in Opsahl, T., Agneessens, F., Skvoretz, J., 2010. Node centrality in weighted
+# networks: Generalizing degree and shortest paths. Social Networks 32 (3),
+# 245-251, https://toreopsahl.com/2010/03/20/closeness-centrality-in-networks-with-disconnected-components/
+# in cases where graphs are not strongly connected
+closeCentrality <- function(G, u = NULL, floyd.res = NULL, raw = TRUE) {
   
   if (is.null(u)) {
     verts <- V(G)
@@ -116,11 +136,42 @@ closeCentrality <- function(G, u = NULL) {
   
   ccents <- rep(NA, length(verts))
   
-  sp <- floyd(G)
+  # optionally take the result of a call to floyd, so as to reduce running
+  # in case the algorithm has run on the same graph before
+  if (is.null(floyd.res)) {
+    sp <- floyd(G)
+  } else {
+    # do a rudimentary check whether the incoming result is a result of running 
+    # floyd on the input graph
+    if (!all(dim(floyd.res[]) == dim(G[]))) {
+      stop("floy.res is not a result of running floyd on the input graph.")
+    }
+    sp <- floyd.res
+  }
+  
+  is_con <- is.connected(G, "strong")
+  
+  if (!is_con) {
+    warning(paste("Graph is not strongly connected, alternative closeness",
+                  "centrality formula (sum(1/d(u,v)) over all v != u) will",
+                  "be used, results of it will be normalized between 0 and 1."))
+  }
   
   for (v in verts) {
     dist_vec <- sp$dist[, v]
-    ccents[v] <- sum(1/dist_vec[-v])
+    if (is_con) {
+      if (raw){
+        ccents[v] <- 1 / sum(dist_vec[-v])
+      } else {
+        ccents[v] <- (length(V(G)) - 1) / sum(dist_vec[-v])
+      }
+    } else {
+      ccents[v] <- sum(1 / dist_vec[-v])
+    }
+  }
+  
+  if (!is_con) {
+    ccents <- ccents / sum(ccents)
   }
   
   return (ccents)
@@ -132,56 +183,60 @@ closeCentrality <- function(G, u = NULL) {
 if (sys.nframe() == 0) {
   library ("igraph")
   
-  # Task 1 ----------------------------------------------------------------
-  
-  reps <- 3
+  reps <- 5
+  direct <- FALSE
   
   res.vec <- rep(NA, reps)
   res <- data.frame(n = res.vec, m = res.vec, cor.bara = res.vec,
-                    cor.erdos = res.vec, ratio = res.vec) 
+                    cor.erdos = res.vec, diff = res.vec, same.dist = res.vec,
+                    close.match.er = res.vec, close.match.ba = res.vec) 
   
+  # for loop for tasks 1 and 2
   for (i in 1:reps) {
     
-    n <- runif(1, 1, 40)
+    n <- runif(1, 1, 50)
     
-    op <- par(mfrow = c(1, 2))
+    op <- par(mfrow = c(2, 2))
     
-    barabasi_albert <- sample_pa(n, out.dist = runif(runif(1, max = 20)))
-    erdos_renyi <- sample_gnm(n, length(E(barabasi_albert)), directed = TRUE)
+    barabasi_albert <- sample_pa(n,
+                                 out.dist = runif(runif(1, min = 1, max = 20)),
+                                 directed = direct)
+    erdos_renyi <- sample_gnm(n, length(E(barabasi_albert)), directed = direct)
     
-    corr_ba <- corrStressCentrEcc(barabasi_albert)
-    corr_er <- corrStressCentrEcc(erdos_renyi)
+    floyd_ba <- floyd(barabasi_albert)
+    floyd_er <- floyd(erdos_renyi)
+    
+    # Task 1: -------------------------------------------------------------
+    
+    corr_ba <- corrStressCentrEcc(barabasi_albert, floyd.res = floyd_ba)
+    corr_er <- corrStressCentrEcc(erdos_renyi, floyd.res = floyd_er)
     
     if (any(is.na(c(corr_ba$pval, corr_ba$corr_coef)))) {
       sub_ba <- "No computation of correlation possible"
     } else {
       sub_ba <- paste(corrRel(corr_ba$corr_coef, corr_ba$pval),
                       paste("r =", round(corr_ba$corr_coef, 2)),
-                      paste("p =", cut(corr_ba$pval, c(0, 0.05, 1),
+                      paste("p", cut(corr_ba$pval, c(0, 0.05, 1),
                                        c("< 0.05", ">= 0.05"))),
                       sep = ", ")
     }
     
     plot(barabasi_albert, main = "Barabási–Albert",
          sub = sub_ba
-         )
+    )
     
     if (any(is.na(c(corr_er$pval, corr_er$corr_coef)))) {
       sub_er <- "No computation of correlation possible"
     } else {
       sub_er <- paste(corrRel(corr_er$corr_coef, corr_er$pval),
                       paste("r =", round(corr_er$corr_coef, 2)),
-                      paste("p =", cut(corr_er$pval, c(0, 0.05, 1),
+                      paste("p", cut(corr_er$pval, c(0, 0.05, 1),
                                        c("< 0.05", ">= 0.05"))),
                       sep = ", ")
     }
     
     plot(erdos_renyi, main = "Erdős–Rényi",
-         sub = paste(corrRel(corr_er$corr_coef, corr_er$pval),
-                     paste("r =", round(corr_er$corr_coef, 2)),
-                     paste("p ", cut(corr_er$pval, c(0, 0.05, 1),
-                                      c("< 0.05", ">= 0.05"))),
-                     sep = ", ")
+         sub = sub_er
     )
     
     res$n[i] <- n
@@ -190,22 +245,65 @@ if (sys.nframe() == 0) {
     res$cor.erdos[i] <- corr_er$corr_coef
     res$diff[i] <- abs(corr_ba$corr_coef - corr_er$corr_coef)
     
+    
+    # Task 2 --------------------------------------------------------------
+    
+    # Call to function for task 2 (Answers to questions at end of script)
+    close_ba <- closeCentrality(barabasi_albert, floyd.res = floyd_ba, raw = F)
+    close_er <- closeCentrality(erdos_renyi, floyd.res = floyd_er, raw = F)
+    
+    closeness_ba <- closeness(barabasi_albert, mode = "out")
+    closeness_er <- closeness(erdos_renyi, mode = "out")
+  
+    if (!(all(is.nan(close_ba)) | all(is.nan(close_er)))) {
+      res$same.dist <- cut(ks_res$p.value, breaks = c(0, 0.05, 1),
+                           labels = c("yes", "no"))
+      ks_res <- ks.test(close_ba, close_er)
+      
+      hist(close_ba, col = "deepskyblue",
+           main = "Histogram of closeness centralities")
+      hist(close_er, col = "gold",
+           main = "Histogram of closeness centralities")
+      
+    } else {
+      plot.new()
+      text(1, 0, paste("Graph has no edges,",
+                       "no closeness centralitiy computation possible.",
+                       sep = "\n"))
+      plot.new()
+      text(1, 0, paste("Graph has no edges,",
+                       "no closeness centralitiy computation possible.",
+                       sep = "\n"))
+    }
+    
+    res$close.match.ba <- all(close_ba %in% closeness_ba)
+    res$close.match.er <- all(close_er %in% closeness_er)
+    
   }
   
-  # Answer to question: There seems to be no clear relationship of the
-  #                     eccentricity of a node with the number of shortest
-  #                     paths passing through it, neither for Barabási–Albert
-  #                     graphs, nor for Erdős–Rényi graphs of similar size 
-  #                     with respect to the number of nodes and edges.
+  print(res)
   
   par(op)
   
-
-  # Task 2 ----------------------------------------------------------------
   
-  close_ba <- closeCentrality(barabasi_albert)
-  close_er <- closeCentrality(erdos_renyi)
-    
 }
+
+
+# Answer Task 1:  There seems to be no clear relationship of the
+#                 eccentricity of a node with the number of shortest
+#                 paths passing through it, neither for Barabási–Albert
+#                 graphs, nor for Erdős–Rényi graphs of similar size 
+#                 with respect to the number of nodes and edges.
+# 
+# Answer Task 2a: Closeness centralities appear to be distributed differently 
+#                 between Erdős–Rényi- and Barabási–Albert-Graphs, with the 
+#                 former having the closeness centralities generally around a mean
+#                 while the latter had them distributed in a manner which lead to
+#                 many nodes with low closeness and only a few ones of high
+#                 closeness
+# 
+# Answer task 2b: The results of my own function for closenessCentrality 
+#                 computation do not match the ones returned by the igraph
+#                 function, 
 
 
