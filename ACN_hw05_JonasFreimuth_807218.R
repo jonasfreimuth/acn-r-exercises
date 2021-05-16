@@ -197,14 +197,9 @@ pageRank <- function (G, alpha = 0.85, k = 1000, precision = 10) {
   E <- matrix(1, nrow = nrow(A), ncol = ncol(A))
   
   D <- matrix(0, nrow = nrow(A), ncol = ncol(A))
-  diag(D) <- degree(G, mode = "out")
+  diag(D) <- 1 / degree(G, mode = "out")
   
-  if (det(D) == 0) {
-    stop(paste("Determinant of matrix of outdegrees is 0,",
-               "getting the page rank is not possible."))
-  }
-  
-  P <- solve(D) %*% A
+  P <- t(as.matrix(D %*% A))
   P_alpha <- alpha * P + 1 / n * (1 - alpha) * E
   
   P_old <- P_alpha
@@ -266,7 +261,7 @@ if (sys.nframe() == 0) {
                       sep = ", ")
     }
     
-    plot(barabasi_albert, main = "Barabási–Albert",
+    plot(barabasi_albert, main = "Barabási–Albert", arrow.size = 0.5,
          sub = sub_ba
     )
     
@@ -280,7 +275,7 @@ if (sys.nframe() == 0) {
                       sep = ", ")
     }
     
-    plot(erdos_renyi, main = "Erdős–Rényi",
+    plot(erdos_renyi, main = "Erdős–Rényi", arrow.size = 0.5,
          sub = sub_er
     )
     
@@ -301,9 +296,11 @@ if (sys.nframe() == 0) {
     closeness_er <- closeness(erdos_renyi, mode = "out")
     
     if (!(all(is.nan(close_ba)) | all(is.nan(close_er)))) {
-      res$same.dist <- cut(ks_res$p.value, breaks = c(0, 0.05, 1),
-                           labels = c("yes", "no"))
+      
       ks_res <- ks.test(close_ba, close_er)
+      
+      res$same.dist <- cut(ks_res$p.value, breaks = c(0, 0.05, 1),
+                           labels = c("yes", "no"), include.lowest = TRUE)
       
       hist(close_ba, col = "deepskyblue",
            main = "Histogram of closeness centralities")
@@ -330,6 +327,13 @@ if (sys.nframe() == 0) {
   
   par(op)
   
+
+  # Task 3 ----------------------------------------------------------------
+
+  pr <- pageRank(erdos_renyi)
+  
+  print(pr[,1])
+  
 }
 
 
@@ -348,7 +352,8 @@ if (sys.nframe() == 0) {
 # 
 # Answer task 2b: The results of my own function for closenessCentrality 
 #                 computation do not match the ones returned by the igraph
-#                 function. Why, thats left 
-# TODO
+#                 function. I have no idea why, i don't recall any discussion
+#                 of normalization constants.
+
 
 
