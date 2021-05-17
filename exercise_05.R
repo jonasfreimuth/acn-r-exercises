@@ -119,7 +119,7 @@ matrixPower <- function(A, k) {
 kWalksNaive <- function (G, k, u, v) {
   A <- as.matrix(G[])
   A_new <- A
-  for (i in 1:k) {
+  for (i in 2:k) {
     A_new <- A_new %*% A
   }
   
@@ -143,7 +143,7 @@ is.irreducible <- function (G) {
   
   A <- as.matrix(G[])
   
-  sp_vec <- c(A[upper.tri(A)], A[lower.tri(A)])
+  sp_vec <- c(sp[upper.tri(A)], sp[lower.tri(A)])
   
   if (any(sp_vec == 0)) {
     return (FALSE)
@@ -161,7 +161,7 @@ katzCentrality <- function (G, beta) {
   I <- matrix(0, nrow = nrow(A), ncol = ncol(A))
   diag(I) <- 1
   
-  B <- I - beta * A
+  B <- I - beta * t(A)
   cent <- (solve(B) - I) %*% matrix(1, nrow = nrow(A), ncol = 1)
   
   return (cent)
