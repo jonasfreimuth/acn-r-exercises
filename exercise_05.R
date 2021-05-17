@@ -155,7 +155,7 @@ is.irreducible <- function (G) {
 
 # Task 3 ------------------------------------------------------------------
 
-katzCentrality <- function (G, beta) {
+katzCentrality <- function (G, beta = 1) {
   A <- as.matrix(G[])
   
   I <- matrix(0, nrow = nrow(A), ncol = ncol(A))
