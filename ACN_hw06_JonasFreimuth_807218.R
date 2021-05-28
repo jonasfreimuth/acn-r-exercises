@@ -180,16 +180,24 @@ if (sys.nframe() == 0) {
     rnd_graph2 <- sample_gnp(runif(1, 1, 20), runif(1), directed = TRUE)
     rnd_graph3 <- sample_gnp(runif(1, 1, 20), runif(1), directed = TRUE)
     
+    # ensure sufficient edges
     n_edges <- c(length(E(rnd_graph1)),
                  length(E(rnd_graph2)),
                  length(E(rnd_graph3)))
     
-    if (all(n_edges > 2)) { redo <- FALSE }
+    # ensure connectedness
+    degrees <- c(degree(rnd_graph1, mode = "out"),
+                 degree(rnd_graph2, mode = "out"),
+                 degree(rnd_graph3, mode = "out"))
+    
+    if (all(n_edges > 2) && !any(degrees == 0)) { redo <- FALSE }
+    
+    bonacics <- list(bonacicCent(rnd_graph1),
+                     bonacicCent(rnd_graph2),
+                     bonacicCent(rnd_graph3))
+    
+    if (!any(is.na(do.call(rbind, bonacics)))) { redo <- FALSE }
   }
-  
-  bonacics <- list(bonacicCent(rnd_graph1),
-                   bonacicCent(rnd_graph2),
-                   bonacicCent(rnd_graph3))
   
   eigens <- list(eigen_centrality(rnd_graph1,
                                   directed = is.directed(rnd_graph1))$vector,
