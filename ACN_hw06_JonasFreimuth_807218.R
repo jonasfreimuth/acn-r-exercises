@@ -116,7 +116,7 @@ transtvty <- function (graph) {
 
 # Task 1 ------------------------------------------------------------------
 
-bonacicCent <- function (G, alpha = 1, beta = 1) {
+bonacichCent <- function (G, alpha = 1, beta = 1) {
   checkValid(G)
   
   A <- as.matrix(G[])
@@ -138,6 +138,20 @@ bonacicCent <- function (G, alpha = 1, beta = 1) {
   bc <- (alpha * solve(P)) %*% A %*% one
   
   return(bc)
+}
+
+eigenvecCent <- function (G) {
+  checkValid(G) 
+  
+  A <- as.matrix(G[])
+  
+  eigens <- eigen(A)
+  
+  if (Im(eigens$value[1]) != 0) {
+    error("Leading eigenvalue not simple")
+  }
+  
+  return(as.vector(as.numeric(eigens$vectors[,1])))
 }
 
 
@@ -192,28 +206,29 @@ if (sys.nframe() == 0) {
     
     if (all(n_edges > 2) && !any(degrees == 0)) { redo <- FALSE }
     
-    bonacics <- list(bonacicCent(rnd_graph1),
-                     bonacicCent(rnd_graph2),
-                     bonacicCent(rnd_graph3))
+    bonacichs <- list(bonacichCent(rnd_graph1),
+                      bonacichCent(rnd_graph2),
+                      bonacichCent(rnd_graph3))
     
     if (!any(is.na(do.call(rbind, bonacics)))) { redo <- FALSE }
   }
   
-  eigens <- list(eigen_centrality(rnd_graph1,
-                                  directed = is.directed(rnd_graph1))$vector,
-                 eigen_centrality(rnd_graph2,
-                                  directed = is.directed(rnd_graph2))$vector,
-                 eigen_centrality(rnd_graph3,
-                                  directed = is.directed(rnd_graph3))$vector)
+  eigens <- list(eigenvecCent(rnd_graph1),
+                 eigenvecCent(rnd_graph2),
+                 eigenvecCent(rnd_graph3))
   
-  cors <- list(cor.test(bonacics[[1]], eigens[[1]]),
-               cor.test(bonacics[[2]], eigens[[2]]),
-               cor.test(bonacics[[3]], eigens[[3]]))
+  cors <- list(cor(bonacichs[[1]], eigens[[1]]),
+               cor(bonacichs[[2]], eigens[[2]]),
+               cor(bonacichs[[3]], eigens[[3]]))
   
   print(cors)
   
   # Answer: 
-  # TODO
+  # As Bonacich centrality is a generalization of eigenvector centrality, I
+  # would have expected there to be consistent correlation or anti-correlation
+  # between both. This does however not seem to be the case. The reason
+  # here could lie in the choice of parameter for the Bonacich centrality,
+  # or of course in the manner both centrality measures were implemented.
   
   # Task 2 ---------------------------------------------------------------
   
