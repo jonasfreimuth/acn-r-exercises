@@ -31,19 +31,7 @@ stubMatching <- function(degSeq, simple = TRUE) {
     redo_pair <- TRUE
     while (redo_pair) {
       
-      # generate distinct pairing indices, this is necessary to have for
-      # deleting the entries later
-      same <- TRUE
-      while (same) {
-        ind_1 <- round(runif(1, min = 1, max = length(stub_vec)))
-        ind_2 <- round(runif(1, min = 1, max = length(stub_vec)))
-        
-        if (ind_1 != ind_2) {
-          same <- FALSE
-        }
-      }
-      pair_indcs <- c(ind_1, ind_2)
-      
+      pair_indcs <- sample(which(!is.na(stub_vec)), 2)
       pair <- stub_vec[pair_indcs]
       
       # check if we want a simple graph
@@ -52,6 +40,8 @@ stubMatching <- function(degSeq, simple = TRUE) {
         if (!(get.edge.ids(G, pair) > 0 || pair[1] == pair[2])) {
           # if not, continue on
           redo_pair <- FALSE
+        } else {
+          print(pair)
         }
       } else {
         redo_pair <- FALSE
@@ -60,7 +50,7 @@ stubMatching <- function(degSeq, simple = TRUE) {
     
     G <- add.edges(G, pair)
     
-    stub_vec <- stub_vec[-pair_indcs]
+    stub_vec[pair_indcs] <- NA
   }
   
   return(G)
