@@ -41,6 +41,9 @@ stubMatching <- function(degSeq, simple = TRUE) {
           # if not, continue on
           redo_pair <- FALSE
         } else {
+          # TODO: the way this is done now it can get stuck on the last
+          # pair, which always violates simplicity. I dont know how to fix 
+          # this without starting over completely
           print(pair)
         }
       } else {
