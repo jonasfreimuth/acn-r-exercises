@@ -136,13 +136,96 @@ getAssortativity <- function (G) {
     avg_degs[v] <- sum(nb_degs) / degs[v]
   }
   
-  return (cor(degs, avg_degs))
+  ass <- cor(degs, avg_degs)
+  
+  if (is.na(ass)) {
+    return (0)
+  }
+  
+  return (ass)
 }
 
 
 # Task 1 ------------------------------------------------------------------
 
-assTest <- function (G) {
+assTest <- function (G, repl = 500) {
+  checkValid(G)
   
+  ass_obs <- getAssortativity(G)
+  
+  degSeq <- sort(degree(G), decreasing = TRUE)
+  
+  n_more_extreme <- 0
+  
+  for (i in 1:repl) {
+    print(paste("repl no ", i))
+    rnd_G <- stubMatching(degSeq, simple = TRUE)
+    ass_perm <- getAssortativity(rnd_G)
+    
+    if (ass_perm > ass_obs) {
+      n_more_extreme <- n_more_extreme + 1
+    }
+  }
+  
+  return ((n_more_extreme + 1) / (repl + 1))
 }
 
+
+# Task 2 ------------------------------------------------------------------
+
+nAdjDegrees <- function (G, d1, d2) {
+  checkValid(G)
+  
+  degs <- degree(G)
+  
+  d1_idcs <- which(degs == d1)
+  d2_idcs <- which(degs == d2)
+  
+  red_adj <- G[d1_idcs, d2_idcs]
+  
+  return(sum(red_adj))
+}
+
+nAdjDegreesTest <- function (G, d1, d2, repl = 500) {
+  checkValid(G)
+  
+  ass_obs <- nAdjDegrees(G, d1, d2)
+  
+  degSeq <- sort(degree(G), decreasing = TRUE)
+  
+  n_more_extreme <- 0
+  
+  for (i in 1:repl) {
+    print(paste("repl no ", i))
+    rnd_G <- stubMatching(degSeq, simple = TRUE)
+    ass_perm <- nAdjDegrees(rnd_G, d1, d2)
+    
+    if (ass_perm > ass_obs) {
+      n_more_extreme <- n_more_extreme + 1
+    }
+  }
+  
+  return ((n_more_extreme + 1) / (repl + 1))
+}
+
+
+# Tests -------------------------------------------------------------------
+
+if (sys.nframe() == 0) {
+  
+  library("igraph")
+  
+  rnd_graph <- sample_gnp(runif(1, 1, 20), runif(1), directed = FALSE)
+  
+
+  # Test - Task 1 ---------------------------------------------------------
+
+  print(assTest(rnd_graph, repl = 10))
+  
+
+  # Test - Task 2 ---------------------------------------------------------
+
+  print(nAdjDegreesTest(rnd_graph, round(runif(1, 1, 20)),
+                    round(runif(1, 1, 20)), repl = 10))
+  
+}
