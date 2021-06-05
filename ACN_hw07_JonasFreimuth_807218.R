@@ -16,7 +16,7 @@ checkValid <- function (G) {
 }
 
 # done after pedros idea of matching half of the stub_vector to the other half
-stubMatching <- function(degSeq, simple = TRUE, n_tries = 50) {
+stubMatching <- function(degSeq, simple = TRUE, n_tries = 100) {
   
   if (is.unsorted(rev(degSeq))) {
     warning (paste("Input degSeq is not non-increasing,",
@@ -31,16 +31,11 @@ stubMatching <- function(degSeq, simple = TRUE, n_tries = 50) {
   if (sum(degSeq) <= 0) {
     warning ("Resulting graph has no edges")
     
-    G <- make_empty_graph(n = length(degSeq))
+    G <- make_empty_graph(n = length(degSeq), directed = FALSE)
     return (G)
   }
   
-  start_over <- TRUE
-  k <- 1
-  while (start_over && k < n_tries) {
-    start_over <- FALSE
-    
-    stub_vec <- rep(0, sum(degSeq))
+  stub_vec <- rep(0, sum(degSeq))
     
     i <- 1
     j <- 1
@@ -59,34 +54,37 @@ stubMatching <- function(degSeq, simple = TRUE, n_tries = 50) {
     stub_inds <- 1:length(stub_vec)
     
     redo <- TRUE
-    while (redo) {
+    k <- 1
+    while (redo && k <= n_tries) {
       redo <- FALSE
       
       rnd_half <- sample(stub_inds, length(stub_vec) / 2)
       other_half <- setdiff(stub_inds, rnd_half)
       
-      edges <- as.vector(rbind(rnd_half, other_half))
+      edges <- as.vector(rbind(stub_vec[rnd_half], stub_vec[other_half]))
       
-      G <- make_graph(n = length(degSeq), edges = edges)
+      G <- make_graph(n = length(degSeq), edges = edges, directed = FALSE)
       
       if (!is.simple(G) && simple) {
         redo <- TRUE
+        k <- k + 1
       } 
-    }
-    
-    return (G)
     
   }
   
   if (k >= n_tries) {
     warning (paste("Could not find a solution satisfying the simple",
-                   "criterion, some nodes may be missing."))
+                   "criterion."))
   }
+  
+  print(is_simple(G))
   
   return (G)
 }
 
 getAssortativity <- function (G) {
+  checkValid(G)
+  
   degs <- rep(0, length(V(G)))
   avg_degs <- rep(0, length(V(G)))
   
@@ -120,7 +118,6 @@ assTest <- function (G, repl = 500) {
   n_more_extreme <- 0
   
   for (i in 1:repl) {
-    print(paste("repl no ", i))
     rnd_G <- stubMatching(degSeq, simple = TRUE)
     ass_perm <- getAssortativity(rnd_G)
     
@@ -158,7 +155,6 @@ nAdjDegreesTest <- function (G, d1, d2, repl = 500) {
   n_more_extreme <- 0
   
   for (i in 1:repl) {
-    print(paste("repl no ", i))
     rnd_G <- stubMatching(degSeq, simple = TRUE)
     ass_perm <- nAdjDegrees(rnd_G, d1, d2)
     
@@ -182,12 +178,12 @@ if (sys.nframe() == 0) {
   
   # Test - Task 1 ---------------------------------------------------------
   
-  print(assTest(rnd_graph, repl = 10))
+  print(assTest(rnd_graph))
   
   
   # Test - Task 2 ---------------------------------------------------------
   
   print(nAdjDegreesTest(rnd_graph, round(runif(1, 1, 10)),
-                        round(runif(1, 1, 20)), repl = 100))
+                        round(runif(1, 1, 20))))
   
 }
