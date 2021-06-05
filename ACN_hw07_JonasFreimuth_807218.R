@@ -19,6 +19,13 @@ checkValid <- function (G) {
 # pseudo-memory efficient, taking much longer to code this than I would have 
 # liked
 stubMatching <- function(degSeq, simple = TRUE, n_tries = 50) {
+  
+  if (is.unsorted(rev(degSeq))) {
+    warning (paste("Input degSeq is not non-increasing,",
+                   "sorting input in decreasing order."))
+    degSeq <- sort(degSeq, decreasing = TRUE)
+  }
+  
   if (sum(degSeq) %% 2 != 0) {
     stop ("Degree sequence not graphic")
   }
