@@ -15,9 +15,7 @@ checkValid <- function (G) {
   }
 }
 
-# I'm sorry, person reading this. I just had to do everything pre-assigned and 
-# pseudo-memory efficient, taking much longer to code this than I would have 
-# liked
+# done after pedros idea of matching half of the stub_vector to the other half
 stubMatching <- function(degSeq, simple = TRUE, n_tries = 50) {
   
   if (is.unsorted(rev(degSeq))) {
@@ -42,7 +40,7 @@ stubMatching <- function(degSeq, simple = TRUE, n_tries = 50) {
   while (start_over && k < n_tries) {
     start_over <- FALSE
     
-    stub_vec <- rep(NA, sum(degSeq))
+    stub_vec <- rep(0, sum(degSeq))
     
     i <- 1
     j <- 1
@@ -57,62 +55,26 @@ stubMatching <- function(degSeq, simple = TRUE, n_tries = 50) {
       j <- j + degSeq[i]
       i <- i + 1
     }
+
+    stub_inds <- 1:length(stub_vec)
     
-    stub_vec <- stub_vec[!is.na(stub_vec)]
-    
-    G <- make_empty_graph(length(degSeq), directed = FALSE)
-    
-    if (simple) {
-      wrong_pairs <- list()
+    redo <- TRUE
+    while (redo) {
+      redo <- FALSE
+      
+      rnd_half <- sample(stub_inds, length(stub_vec) / 2)
+      other_half <- setdiff(stub_inds, rnd_half)
+      
+      edges <- as.vector(rbind(rnd_half, other_half))
+      
+      G <- make_graph(n = length(degSeq), edges = edges)
+      
+      if (!is.simple(G) && simple) {
+        redo <- TRUE
+      } 
     }
     
-    for (i in seq(1, sum(degSeq), 2)) {
-      
-      redo_pair <- TRUE
-      while (redo_pair) {
-        
-        pair_indcs <- sample(which(!is.na(stub_vec)), 2)
-        pair <- stub_vec[pair_indcs]
-        
-        # check if we want a simple graph
-        if (simple) {
-          
-          # if we already stamped this pair as wrong discard it right away
-          if (list(sort(pair)) %in% wrong_pairs) {
-            next
-          }
-          
-          # if so, check whether adding the current pair violates that
-          if (!(get.edge.ids(G, pair) > 0 || pair[1] == pair[2])) {
-            # if not, continue on
-            redo_pair <- FALSE
-          } else {
-            wrong_pairs[[toString(i)]] <- sort(pair)
-          }
-          
-          if (length(wrong_pairs) >= sum(!is.na(stub_vec)) ) {
-            # sometimes this may get stuck on the last pair if that would
-            # violate graph simplicity
-            start_over <- TRUE
-            k <- k + 1
-            
-            # break out of the redo loop
-            break
-          }
-          
-        } else {
-          redo_pair <- FALSE
-        }
-      }
-      
-      if (start_over) {
-        break
-      }
-      
-      G <- add.edges(G, pair)
-      
-      stub_vec[pair_indcs] <- NA
-    }
+    return (G)
     
   }
   
@@ -217,15 +179,15 @@ if (sys.nframe() == 0) {
   
   rnd_graph <- sample_gnp(runif(1, 1, 20), runif(1), directed = FALSE)
   
-
+  
   # Test - Task 1 ---------------------------------------------------------
-
+  
   print(assTest(rnd_graph, repl = 10))
   
-
+  
   # Test - Task 2 ---------------------------------------------------------
-
-  print(nAdjDegreesTest(rnd_graph, round(runif(1, 1, 20)),
-                    round(runif(1, 1, 20)), repl = 10))
+  
+  print(nAdjDegreesTest(rnd_graph, round(runif(1, 1, 10)),
+                        round(runif(1, 1, 20)), repl = 100))
   
 }
