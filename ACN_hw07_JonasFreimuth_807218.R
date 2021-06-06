@@ -96,7 +96,7 @@ getAssortativity <- function (G) {
     avg_degs[v] <- sum(nb_degs) / degs[v]
   }
   
-  ass <- cor(degs, avg_degs)
+  ass <- cor(degs, avg_degs, use = "pairwise.complete.obs")
   
   if (is.na(ass)) {
     return (0)
