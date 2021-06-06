@@ -183,7 +183,9 @@ if (sys.nframe() == 0) {
   
   # Test - Task 2 ---------------------------------------------------------
   
-  print(nAdjDegreesTest(rnd_graph, round(runif(1, 1, 10)),
-                        round(runif(1, 1, 20))))
+  rnd_degs <- sample(degree(rnd_graph), 2, replace = TRUE)
+  
+  print(nAdjDegreesTest(rnd_graph, rnd_degs[1],
+                        rnd_degs[2]))
   
 }
