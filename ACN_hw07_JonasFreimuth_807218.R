@@ -77,8 +77,6 @@ stubMatching <- function(degSeq, simple = TRUE, n_tries = 100) {
                    "criterion."))
   }
   
-  print(is_simple(G))
-  
   return (G)
 }
 
@@ -148,7 +146,7 @@ nAdjDegrees <- function (G, d1, d2) {
 nAdjDegreesTest <- function (G, d1, d2, repl = 500) {
   checkValid(G)
   
-  ass_obs <- nAdjDegrees(G, d1, d2)
+  adj_obs <- nAdjDegrees(G, d1, d2)
   
   degSeq <- sort(degree(G), decreasing = TRUE)
   
@@ -156,7 +154,7 @@ nAdjDegreesTest <- function (G, d1, d2, repl = 500) {
   
   for (i in 1:repl) {
     rnd_G <- stubMatching(degSeq, simple = TRUE)
-    ass_perm <- nAdjDegrees(rnd_G, d1, d2)
+    adj_perm <- nAdjDegrees(rnd_G, d1, d2)
     
     if (adj_perm >= adj_obs) {
       n_more_extreme <- n_more_extreme + 1
