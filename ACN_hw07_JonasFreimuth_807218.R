@@ -121,7 +121,7 @@ assTest <- function (G, repl = 500) {
     rnd_G <- stubMatching(degSeq, simple = TRUE)
     ass_perm <- getAssortativity(rnd_G)
     
-    if (ass_perm > ass_obs) {
+    if (ass_perm >= ass_obs) {
       n_more_extreme <- n_more_extreme + 1
     }
   }
@@ -158,7 +158,7 @@ nAdjDegreesTest <- function (G, d1, d2, repl = 500) {
     rnd_G <- stubMatching(degSeq, simple = TRUE)
     ass_perm <- nAdjDegrees(rnd_G, d1, d2)
     
-    if (ass_perm > ass_obs) {
+    if (adj_perm >= adj_obs) {
       n_more_extreme <- n_more_extreme + 1
     }
   }
