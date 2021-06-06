@@ -9,10 +9,10 @@ checkValid <- function (G) {
     stop("Package 'igraph' required but not installed.")
   }
   
-  if (is_weighted(G) || !is_simple(G)) {
-    stop(paste("This algorithm does not work on",
-               "weighted graphs or multigraphs."))
-  }
+  # if (is_weighted(G) || !is_simple(G)) {
+  #   stop(paste("This algorithm does not work on",
+  #              "weighted graphs or multigraphs."))
+  # }
 }
 
 # done after pedros idea of matching half of the stub_vector to the other half
@@ -142,7 +142,7 @@ nAdjDegrees <- function (G, d1, d2) {
   
   red_adj <- G[d1_idcs, d2_idcs]
   
-  return(sum(red_adj))
+  return(sum(red_adj > 0))
 }
 
 nAdjDegreesTest <- function (G, d1, d2, repl = 500) {
