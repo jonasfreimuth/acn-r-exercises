@@ -47,6 +47,8 @@ minConn4Paths <- function (G) {
   
   n <- 0
   
+  paths <- list()
+  
   # adapted from Seiranas solution to homework 4
   for (u in V(G)) {
     for (v in V(G)) {
@@ -63,7 +65,7 @@ minConn4Paths <- function (G) {
                   G[x, u] == 0 && G[x, v] == 0) {
                 
                 n <- n + 1
-                
+                paths[[n]] <- c(u, v, w, x)
               }
             }
             
@@ -74,27 +76,29 @@ minConn4Paths <- function (G) {
     }
   }
   
-  return (n)
+  return (list(n = n, paths = paths))
 }
 
 
 # Tests -------------------------------------------------------------------
 
 if (sys.nframe() == 0) {
+  library("igraph")
   
   direct <- FALSE
   
-  n <- round(runif(1, 1, 50))
+  n <- round(runif(1, 1, 20))
   
   barabasi_albert <- sample_pa(n,
-                               out.dist = runif(runif(1, min = 1, max = 20)),
+                               out.dist = c(0.1, rep(0,8), 0.9),
+                               # out.dist = runif(runif(1, min = 1, max = 20)),
                                directed = direct)
   erdos_renyi <- sample_gnm(n, length(E(barabasi_albert)), directed = direct)
   
   op <- par(mfrow = c(1, 2))
   
-  plot(barabasi_albert)
-  plot(erdos_renyi)
+  plot(barabasi_albert, main = "Barabási–Albert")
+  plot(erdos_renyi, main = "Erdős–Rényi")
   
   par(op)
 
@@ -124,13 +128,22 @@ if (sys.nframe() == 0) {
 
   # Task 2 ----------------------------------------------------------------
 
-  # 
+  # Due to the different ways they are generated, Erdős–Rényi and 
+  # Barabási–Albert graphs show different numbers of minimally connected 4 
+  # paths. In the Barabási–Albert model the graph is constructed iteratively
+  # with new nodes being coninuously added and edges being drawn from old 
+  # nodes to the new one with given probabilities, while in the Erdős–Rényi
+  # model all nodes are present from the start and edges are being drawn at 
+  # random. As there is much more interconnectedness in a Erdős–Rényi graph
+  # than in a Barabási–Albert graph, the former will generally have less 
+  # 4 paths than the former given the same number of nodes and edges in both
+  # is the same.
   
   n4Paths_ba <- minConn4Paths(barabasi_albert)
   n4Paths_er <- minConn4Paths(erdos_renyi)
   
   print(paste("Number of 4-paths in the Barabási–Albert graph:",
-              n4Paths_ba))
+              n4Paths_ba$n))
   print(paste("Number of 4-paths in the Erdős–Rényi graph:",
-              n4Paths_er))
+              n4Paths_er$n))
 }
