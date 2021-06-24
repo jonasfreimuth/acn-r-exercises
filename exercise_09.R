@@ -7,15 +7,15 @@ qtCluster <- function (dist_mat, diam)  {
   # index corresponds to point (index of dist_mat)
   # value corresponds to group identity
   grp_vec <- rep(0, nrow(dist_mat))
-  
-  max_clust <- 0
   clust_no <- 1
   
   while (any(grp_vec == 0)) {
+    
+    max_clust <- 0
+    
     for (p in 1:nrow(dist_mat)) {
       
-      clust <- intersect(which(dist_mat[p, ] <= diam / 2), which(grp_vec == 0))
-      # clust <- which(dist_mat[p, ] <= diam / 2 && grp_vec == 0)
+      clust <- which(dist_mat[p, ] <= diam / 2 & grp_vec == 0)
       
       if (length(clust) >= max_clust) {
         max_clust <- length(clust)
