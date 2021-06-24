@@ -1,7 +1,6 @@
 
 # Exc 1 -------------------------------------------------------------------
 
-# currently gets stuck in infinite loop, aparently
 qtCluster <- function (dist_mat, diam)  {
   
   # index corresponds to point (index of dist_mat)
@@ -36,29 +35,42 @@ qtCluster <- function (dist_mat, diam)  {
 
 silhouetteIndex <- function (dist_mat, clust_vec) {
   
+  # if only one object exists
+  if (length(clust_vec) <= 1) {
+    return(0)
+  }
+  
   n_clust <- length(unique(clust_vec))
   
-  s <- rep(-2, nrow(dist_mat))
+  s_vec <- rep(-2, nrow(dist_mat))
   
   for (obj in 1:nrow(dist_mat)) {
     in_clust <- which(clust_vec == clust_vec[obj])
-    in_clust <- in_clust[in_clust != obj]
-    
-    out_clust_dist <- rep(0, n_clust - 1)
-    
-    for (clust in 1:(n_clust - 1)) {
-      clust_objs <- which(clust_vec == clust)
-      out_clust_dist[clust] <- mean(dist_mat[obj, clust_objs])
-    }
     
     a_obj <- mean(dist_mat[obj, in_clust])
     
+    out_clust_dist <- rep(0, n_clust - 1)
+    
+    out_clust_vec <- unique(clust_vec)
+    out_clust_vec <- out_clust_vec[out_clust_vec != clust_vec[obj]]
+    
+    for (i in 1:length(out_clust_dist)) {
+      clust <- out_clust_vec[i]
+      
+      clust_objs <- which(clust_vec == clust)
+      out_clust_dist[i] <- mean(dist_mat[obj, clust_objs])
+    }
+    
     b_obj <- min(out_clust_dist)
     
-    s[obj] <- (b_obj - a_obj) / max(a_obj, b_obj)
+    s_vec[obj] <- (b_obj - a_obj) / max(a_obj, b_obj)
+    
+    if (is.na(s_vec[obj])) {
+      browser()
+    }
   }
   
-  return(mean(s))
+  return(mean(s_vec))
 }
 
 
@@ -74,3 +86,4 @@ if (sys.nframe() == 0) {
   
   silhouetteIndex(dist, grp_vec)
 }
+
