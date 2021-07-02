@@ -37,8 +37,6 @@ getModularity <- function(G, mem_vec) {
     
     clust_nodes <- which(mem_vec == clust)
     
-    # browser()
-    
     E_clust <- ecount(induced.subgraph(G, clust_nodes))
     
     Q[clust] <- (E_clust / m) - (sum(degs[clust_nodes]) / (2 * m)) ^ 2
@@ -60,12 +58,8 @@ spectralCLusterModularity <- function(G) {
   # otherwise it doesnt work
   grp_vec <- components(G)$membership
   
-  # browser()
-  
   curr_mod <- getModularity(G, grp_vec)
   best_mod <- Inf
-  
-  # browser()
   
   while (best_mod > curr_mod) {
     
@@ -75,26 +69,9 @@ spectralCLusterModularity <- function(G) {
     best_mod <- curr_mod
     best_grp <- grp_vec
     
-    # browser()
-    
     for (clust in clust_vec) {
       
-      # browser()
-      
       clust_nodes <- which(grp_vec == clust)
-      
-      # check for degeneracy, should not be necessary
-      # n_cl_nds <- length(clust_nodes)
-      # 
-      # # check if the current selection of nodes forms a clique
-      # # (adjacency matrix has edges between all elements)
-      # if (
-      #   sum(G[clust_nodes, clust_nodes] > 0) >= (((n_cl_nds) ^ 2) - n_cl_nds)
-      # ) {
-      #   break
-      # }
-      
-      # browser()
       
       sub_graph <- induced.subgraph(G, clust_nodes)
       lap_mat <- laplacian_matrix(sub_graph)
@@ -123,8 +100,6 @@ spectralCLusterModularity <- function(G) {
       # check if if brings better modularity if these disconnected components 
       # are considered separate clusters
       
-      # browser()
-      
       for (grp_nds in list(nds_grp_a, nds_grp_b)) {
         if (length(grp_nds) > 0) {
           # scale grp_nodes back so they match nodes in subgraph
@@ -145,8 +120,6 @@ spectralCLusterModularity <- function(G) {
       # calculate modularity with this clustering
       mod_tmp <- getModularity(G, grp_vec_tmp)
       
-      # browser()
-      
       # check whether this gives a better modularity 
       if (mod_tmp >= best_mod) {
         best_mod <- mod_tmp
@@ -156,8 +129,6 @@ spectralCLusterModularity <- function(G) {
     }
     
     grp_vec <- best_grp
-    
-    # browser()
     
   }
   
