@@ -57,7 +57,6 @@ if (sys.nframe() == 0) {
   library("dequer")
   
   rnd_graph <- sample_gnp(20, 0.5)
-  
   rnd_vert <- as.numeric(sample(V(rnd_graph), 1))
   
   opar <- par(mfrow = c(1, 2))
