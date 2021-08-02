@@ -1,3 +1,5 @@
+# THIS WORKS ONLY ON UNDIRECTED GRAPHS
+
 threeNodeSub <- function(G) {
   nw_list <- list()
   
