@@ -1,29 +1,41 @@
-# THIS WORKS ONLY ON UNDIRECTED GRAPHS
+# This works, assuming a subnetwork consists of the tuple of nodes 
+#   V' = (v, u, w) and E' = ((v,u), (u,w))
+
+# Pseudocode: Given a graph G
+# threeNodeSub(G):
+#   for each u in G do
+#     for every in-neighbor v of u, v != w do
+#       for every out-neighbor w of u, w != u, v do
+#         print(v, u, w)
+#       end for
+#     end for
+#   end for
 
 threeNodeSub <- function(G) {
-  nw_list <- list()
+  # x <- rep(NA, factorial(vcount(G)))
+  # nw_out <- data.frame(v = NULL, u = NULL, w = NULL)
+  # i <- 1
   
   for (u in V(G)) {
-    nbs <- neighbors(G, u)
-    
-    pairs <- t(combn(nbs, 2))
-    
-    for (i in 1:nrow(pairs)) {
-      nw_list[[length(nw_list) + 1]] <- c(u, pairs[i,])
-      print(c(u, pairs[i,]))
-    }  }
-  
-  return(nw_list)
+    for (v in neighbors(G, u, "in")) {
+      if (v == u) { next }
+      for (w in neighbors(G, v, "out")) {
+        if (w %in% c(v, u)) { next }
+        print(c(u, v, w))
+        
+        # nw_out[i, ] <- c(v, u, w)
+        # i <- i + 1
+      }
+    }
+  }
+  # return(na.omit(nw_list))
 }
 
 if (sys.nframe() == 0) {
   library(igraph)
   
-  rnd_graph <- sample_gnp(20, 0.2, directed = FALSE)
+  rnd_graph <- sample_gnp(5, 1, directed = TRUE)
   
   nws <- threeNodeSub(rnd_graph)
-  
-  # check if each nw is counted once
-  length(nws) == length(unique(nws))
   
 }
